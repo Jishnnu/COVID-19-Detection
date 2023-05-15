@@ -4,12 +4,14 @@ import joblib
 from sklearn.preprocessing import LabelEncoder
 
 # Load the dataset and get the column names
-dataset = pd.read_csv('/kaggle/input/symptoms-and-covid-presence/Covid Dataset.csv')
+dataset = pd.read_csv('Covid Dataset.csv')
+columns_to_drop = ['Wearing Masks', 'Sanitization from Market']
+dataset = dataset.drop(columns_to_drop, axis=1)
 column_names = dataset.columns.tolist()
 
 # Define a function to make predictions using the selected models
 def predict_covid(*symptoms):
-    # Convert None values to False
+    # Convert None values to Falses
     symptoms = [False if symptom is None else symptom for symptom in symptoms]
     
     if sum(symptoms) == 0:
@@ -57,8 +59,8 @@ checkboxes = [gr.inputs.Checkbox(label=column_name) for column_name in column_na
 inputs = checkboxes
 
 # Create the output interface with the predicted labels
-outputs = gr.outputs.Label(num_top_classes=1, label="Prediction")
-title = "COVID-19 Prediction"
+outputs = gr.outputs.Label(num_top_classes=1, label="COVID-19 Status")
+title = "COVID-19 Detection"
 description = "Select your symptoms and contact history to check if you have COVID-19"
 final_model = gr.Interface(fn=predict_covid, inputs=inputs, outputs=outputs, title=title, description=description)
 
