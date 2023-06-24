@@ -3,5 +3,9 @@
 
 This repository contains all the materials related to the implementation of a **_Hybrid Machine Learning model to predict if an individual has contracted COVID-19 from the symptoms they experience_**. 
 
-Please make sure that you change the existing path specification with your custom directory path in the source code. I have deployed this CNN model on Gradio. Simply click on the **_Open in Gradio_** button to check it out.
+Please make sure that you change the existing path specification with your custom directory path in the source code. I have deployed this machine learning model on HuggingFace as a **_Gradio application_**. Simply click on the **_Open in Gradio_** button to check it out.
+
+**DATASETS**
+1. https://www.kaggle.com/datasets/hemanthhari/symptoms-and-covid-presence
+2. 
 

@@ -1,4 +1,10 @@
 gradio
+opencv-python
+matplotlib
+tensorflow
+keras
 pandas
+numpy
 joblib
+Pillow
 scikit-learn
