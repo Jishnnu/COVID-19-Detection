@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 import joblib
+import cv2
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.models import save_model, load_model
 from PIL import Image
@@ -59,26 +60,58 @@ class_index_mapping = {i: label for i, label in enumerate(class_labels)}
 # Apply the same rescaling as in the model
 def rescale_images(img):
     return img / 127.5 - 1
+    
+# def segment_lungs(image):
+#     # Convert the image to grayscale
+#     gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    
+#     # Apply thresholding to segment the lungs from the background
+#     _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    
+#     # Apply morphological operations to refine the binary mask
+#     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+#     binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
+#     binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
+    
+#     # Perform connected component analysis
+#     _, labels, stats, _ = cv2.connectedComponentsWithStats(binary, connectivity=4)
+    
+#     # Find the lung region based on properties such as area, position, etc.
+#     lung_region = None
+#     for label in range(1, stats.shape[0]):
+#         area = stats[label, cv2.CC_STAT_AREA]
+#         x, y, width, height = stats[label, cv2.CC_STAT_LEFT], stats[label, cv2.CC_STAT_TOP], \
+#                                stats[label, cv2.CC_STAT_WIDTH], stats[label, cv2.CC_STAT_HEIGHT]
+#         aspect_ratio = width / height
+#         # Add any additional criteria to identify the lung region
+        
+#         if area > 1000 and aspect_ratio > 0.5 and aspect_ratio < 2.0:
+#             lung_region = (x, y, width, height)
+#             break
+    
+#     # Return True if lung region is detected, False otherwise
+#     return lung_region is not None
 
+def is_scan_blurry(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
+    return laplacian_var < 15
+    
 # Define a function to preprocess the image
-def preprocess_image(image):
-    image = image.copy()  # Create a copy of the image array
+def preprocess_image(image):        
+    image = image.copy()  
     image = Image.fromarray(image)  # Convert the array to PIL Image
-    image = image.resize((128, 128))  # Resize the image to match the input size
-    image = np.array(image)  # Convert the image back to a NumPy array
-    image = rescale_images(image)  
+    image = image.resize((128, 128))         
+    image = np.array(image)
+    image = rescale_images(image)      
     return image
     
 # Define a function to make predictions using the selected models
-def predict_covid(*args):
-    # Convert None values to False
-    symptoms = [False if symptom is None else symptom for symptom in args[:-1]]
+def predict_covid(*args):    
+    symptoms = [False if symptom is None else symptom for symptom in args[:-1]] # Convert None values to False
     image = args[-1]
 
     if not any(symptoms) and image is None:
-        prediction = "COVID-19 Negative"
-        reason = "User input is not properly defined" 
-        confidence_value = "100%"
         return "COVID-19 Negative", "100%", "COVID-19 Negative", "100%", "No inputs defined"    
         
     # Prepare the input data for the text-based model
@@ -117,6 +150,11 @@ def predict_covid(*args):
 
     text_prediction = "COVID-19 Positive" if positive_predictions >= 4 else "COVID-19 Negative"
 
+    # Determine the overall prediction from the text-based model
+    if text_prediction is None:
+        text_prediction = "NA"
+        text_prob_positive = 0.0
+
     # Calculate the average probability of positive prediction
 #     text_prob_positive = ((logreg_prob_positive + rf_prob_positive + dt_prob_positive +
 #                           knn_prob_positive + svm_prob_positive + ann_prob_positive) / 6) * 100
@@ -133,13 +171,23 @@ def predict_covid(*args):
     reason = None
 
     if image is not None:
+        is_blurry = is_scan_blurry(image)
+        if is_blurry:
+            return (
+                "Invalid X-Ray Scan",
+                "NA",
+                "Invalid X-Ray Scan",
+                "NA",
+                "Your X-Ray scan does not meet the required standards. Please ensure that your scans are not blurry, pixelated, or disfigured"
+            )
+        
         image = preprocess_image(image)
 
         # Make predictions using the ensemble models
         ensemble_predictions = []
         for model_name, model in ensemble_models.items():
             prediction = model.predict(image[np.newaxis, ...])[0]
-            probabilities = prediction / np.sum(prediction)  # Calculate probabilities manually
+            probabilities = prediction / np.sum(prediction)  
             ensemble_predictions.append((prediction, probabilities))
     
         # Calculate the average prediction from the ensemble models
@@ -177,7 +225,7 @@ def predict_covid(*args):
     else:
         reason = "Your symptoms provide conclusive indications of your diagnosis"
         
-    return text_prediction, text_prob_positive, image_prediction, confidence, reason
+    return text_prediction,  f"{text_prob_positive:.2f}%", image_prediction, f"{confidence:.2f}%", reason
 
 # Create the input and output components
 symptom_components = [gr_components.Checkbox(label=label) for label in column_names[:-1]]
