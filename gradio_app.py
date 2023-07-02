@@ -60,37 +60,6 @@ class_index_mapping = {i: label for i, label in enumerate(class_labels)}
 # Apply the same rescaling as in the model
 def rescale_images(img):
     return img / 127.5 - 1
-    
-# def segment_lungs(image):
-#     # Convert the image to grayscale
-#     gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    
-#     # Apply thresholding to segment the lungs from the background
-#     _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    
-#     # Apply morphological operations to refine the binary mask
-#     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-#     binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
-#     binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
-    
-#     # Perform connected component analysis
-#     _, labels, stats, _ = cv2.connectedComponentsWithStats(binary, connectivity=4)
-    
-#     # Find the lung region based on properties such as area, position, etc.
-#     lung_region = None
-#     for label in range(1, stats.shape[0]):
-#         area = stats[label, cv2.CC_STAT_AREA]
-#         x, y, width, height = stats[label, cv2.CC_STAT_LEFT], stats[label, cv2.CC_STAT_TOP], \
-#                                stats[label, cv2.CC_STAT_WIDTH], stats[label, cv2.CC_STAT_HEIGHT]
-#         aspect_ratio = width / height
-#         # Add any additional criteria to identify the lung region
-        
-#         if area > 1000 and aspect_ratio > 0.5 and aspect_ratio < 2.0:
-#             lung_region = (x, y, width, height)
-#             break
-    
-#     # Return True if lung region is detected, False otherwise
-#     return lung_region is not None
 
 def is_scan_blurry(image):
     gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
