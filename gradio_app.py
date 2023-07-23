@@ -5,6 +5,9 @@ import tensorflow as tf
 import mlxtend
 import joblib
 import cv2
+import matplotlib.pyplot as plt
+import seaborn as sns
+import tempfile
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.models import save_model, load_model
 from PIL import Image
@@ -58,6 +61,66 @@ ensemble_models = {
 class_labels = ['COVID-19', 'Normal', 'Viral Pneumonia']
 class_index_mapping = {i: label for i, label in enumerate(class_labels)}
 
+# Define a dictionary with custom weightage for each symptom
+custom_symptom_weightage = {
+    "Breathing Problem": 1.0,
+    "Fever": 1.0,
+    "Dry Cough": 1.0,
+    "Sore throat": 1.0,
+    "Running Nose": 1.0,
+    "Asthma": 1.0,
+    "Chronic Lung Disease": 1.0,
+    "Headache": 1.0,
+    "Heart Disease": 0.7,
+    "Diabetes": 1.0,
+    "Hyper Tension": 1.0,
+    "Fatigue": 0.9,
+    "Gastrointestinal": 0.7,
+    "Abroad Travel": 0.5,
+    "Contact with COVID Patient": 1.0,
+    "Attended Large Gathering": 0.5,
+    "Visited Public Exposed Places": 0.5,
+    "Family Working in Public Exposed Places": 0.5,
+}
+
+# Create a bar chart to represent symptom weightage
+def show_symptom_weightage(symptoms, weights):
+    selected_symptoms = [symptom for symptom, weight in zip(symptoms, weights) if weight > 0]
+
+    # Check if any symptom is selected by the user
+    if len(selected_symptoms) == 0:
+        # If no symptom is selected, return None to indicate no bar graph should be displayed
+        return None
+
+    selected_weights = [weight for weight in weights if weight > 0]
+    plt.figure(figsize=(10, 6))
+    plt.bar(selected_symptoms, selected_weights)
+    plt.xlabel("Symptom")
+    plt.ylabel("Weight")
+    plt.title("Weightage/Importance of Selected Symptoms")
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+
+    # Save the plot as an image and return the file path
+    file_path = tempfile.NamedTemporaryFile(suffix=".png").name
+    plt.savefig(file_path)
+    plt.close()
+    return file_path
+
+# Create a heat map to represent image-based model predictions
+def show_heat_map(image, prediction_probabilities):
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(prediction_probabilities, annot=True, cmap="YlGnBu", xticklabels=class_labels, yticklabels=False)
+    plt.title("Image-based Model Prediction Heatmap")
+    plt.xlabel("Prediction")
+    plt.ylabel("Model")
+    plt.tight_layout()
+    # Save the plot as an image and return the file path
+    file_path = tempfile.NamedTemporaryFile(suffix=".png").name
+    plt.savefig(file_path)
+    plt.close()
+    return file_path
+    
 # Apply the same rescaling as in the model
 def rescale_images(img):
     return img / 127.5 - 1
@@ -82,7 +145,10 @@ def predict_covid(*args):
     image = args[-1]
 
     if not any(symptoms) and image is None:
-        return "COVID-19 Negative", "100%", "COVID-19 Negative", "100%", "No inputs defined"    
+        return "COVID-19 Negative", "100%", "COVID-19 Negative", "100%", "No inputs defined", None, None
+
+    if any(symptoms) and image is None:
+        return "NA", "NA", "NA", "NA", "Please select your Symptoms and provide your Chest X-Ray Scan", None, None    
         
     # Prepare the input data for the text-based model
     label_encoder = LabelEncoder()
@@ -125,16 +191,19 @@ def predict_covid(*args):
         text_prediction = "NA"
         text_prob_positive = 0.0
 
-    # Calculate the average probability of positive prediction
-#     text_prob_positive = ((logreg_prob_positive + rf_prob_positive + dt_prob_positive +
-#                           knn_prob_positive + svm_prob_positive + ann_prob_positive) / 6) * 100
-    
-    weights = [0.2, 0.2, 0.2, 0.2, 0.1, 0.2]  # Example weights for each model
+    # Calculate the average probability of positive prediction    
+    weights = [custom_symptom_weightage[symptom] if symptom in custom_symptom_weightage else 0.0 for symptom in column_names[:-1]]
     probabilities = [logreg_prob_positive, rf_prob_positive, dt_prob_positive,
                      knn_prob_positive, svm_prob_positive, ann_prob_positive]
 
-    text_prob_positive = np.average(probabilities, weights=weights) * 100
+    # Manually calculate the weighted average
+    total_weighted_prob = sum(prob * weight for prob, weight in zip(probabilities, weights))
+    total_weight = sum(weights)
+    text_prob_positive = (total_weighted_prob / total_weight) * 100 if total_weight != 0 else 0.0
 
+    # Visualize the symptom weightage/importance    
+    symptom_weightage_img = show_symptom_weightage(column_names[:-1], weights)    
+    
     # Prepare the input data for the image-based model
     image_prediction = None
     confidence = None
@@ -148,7 +217,9 @@ def predict_covid(*args):
                 "NA",
                 "Invalid X-Ray Scan",
                 "NA",
-                "Your X-Ray scan does not meet the required standards. Please ensure that your scans are not blurry, pixelated, or disfigured"
+                "Your X-Ray scan does not meet the required standards. Please ensure that your scans are not blurry, pixelated, or disfigured",
+                None,
+                None
             )
         
         image = preprocess_image(image)
@@ -168,6 +239,9 @@ def predict_covid(*args):
         # Calculate the confidence level of the prediction
         confidence = np.max(avg_ensemble_prob) * 100
 
+        # Visualize the heatmap
+        heatmap_img = show_heat_map(image, [prediction for prediction, _ in ensemble_predictions])
+        
         # Provide reasoning for the prediction
         if ensemble_prediction == 0 and text_prediction == "COVID-19 Positive":
             reason = "Your X-Ray scan and symptoms provide conclusive indications of COVID-19" 
@@ -194,8 +268,13 @@ def predict_covid(*args):
     
     else:
         reason = "Your symptoms provide conclusive indications of your diagnosis"
+
+    # Ensure that confidence and other variables have a valid value
+    confidence = 0.0 if confidence is None else confidence
+    heatmap_img = "" if heatmap_img is None else heatmap_img
+    symptom_weightage_img = "" if symptom_weightage_img is None else symptom_weightage_img
         
-    return text_prediction,  f"{text_prob_positive:.2f}%", image_prediction, f"{confidence:.2f}%", reason
+    return text_prediction, f"{text_prob_positive:.2f}%", image_prediction, f"{confidence:.2f}%", reason, heatmap_img, symptom_weightage_img
 
 # Create the input and output components
 symptom_components = [gr_components.Checkbox(label=label) for label in column_names[:-1]]
@@ -206,6 +285,8 @@ output_components = [
     gr_components.Label(label="Prediction based on X-Ray Scan"),
     gr_components.Label(label="X-Ray Scan Confidence (%)"),
     gr_components.Textbox(label="Final Prediction"),
+    gr_components.Image(label="X-Ray Prediction Heatmap"),
+    gr_components.Image(label="Weightage assigned to Symptoms")
 ]
 
 # Create the interface and launch
