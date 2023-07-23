@@ -2,6 +2,7 @@ import gradio as gr
 import pandas as pd
 import numpy as np
 import tensorflow as tf
+import mlxtend
 import joblib
 import cv2
 from sklearn.preprocessing import LabelEncoder
@@ -37,12 +38,12 @@ class CustomScaleLayer(tf.keras.layers.Layer):
 tf.keras.utils.get_custom_objects()['CustomScaleLayer'] = CustomScaleLayer
 
 # Load the image-based models with the custom object scope
-inception_model = load_model('xray_inception_model.h5', compile=False)
-resnet_model = load_model('xray_resnet_model.h5', compile=False)
-densenet_model = load_model('xray_densenet_model.h5', compile=False)
-vgg19_model = load_model('xray_vgg19_model.h5', compile=False)
-efficientnet_model = load_model('xray_efficientnet_model.h5', compile=False)
-mobilenet_model = load_model('xray_mobilenet_model.h5', compile=False)
+inception_model = tf.keras.models.load_model('xray_inception_model.h5', compile=False)
+resnet_model = tf.keras.models.load_model('xray_resnet_model.h5', compile=False)
+densenet_model = tf.keras.models.load_model('xray_densenet_model.h5', compile=False)
+vgg19_model = tf.keras.models.load_model('xray_vgg19_model.h5', compile=False)
+efficientnet_model = tf.keras.models.load_model('xray_efficientnet_model.h5', compile=False)
+mobilenet_model = tf.keras.models.load_model('xray_mobilenet_model.h5', compile=False)
 
 # Define the ensemble models
 ensemble_models = {
