@@ -4,7 +4,7 @@
 
 This repository contains all the materials related to the implementation of a **_Hybrid Machine Learning model to predict if an individual has contracted COVID-19 from the symptoms they experience and from the X-Ray scans of their chest (lungs)_**. 
 
-Please make sure that you change the existing path specification with your custom directory path in the source code. I have deployed this CNN model on HuggingFace as a **_Gradio Application_**. Simply click on the **_Open in Gradio_** button to check it out.
+Please make sure that you change the existing path specification with your custom directory path in the source code. I have deployed this Hybrid Machine Learning model on HuggingFace as a **_Gradio Application_**. Simply click on the **_Open in Gradio_** button to check it out.
 
 
 ## Kaggle Datasets
