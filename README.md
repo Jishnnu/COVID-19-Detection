@@ -1,5 +1,5 @@
 # COVID-19 Detection
-[![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Jishnnu/COVID-19-Detection)](https://github.com/Jishnnu/COVID-19-Detection) &ensp; [![GitHub repo size](https://img.shields.io/github/repo-size/Jishnnu/COVID-19-Detection)](https://github.com/Jishnnu/COVID-19-Detection) &ensp; [![Open in Spaces](https://huggingface.co/datasets/huggingface/badges/raw/main/open-in-hf-spaces-sm.svg)](https://huggingface.co/spaces/Jishnnu/COVID-19-Detection)
+[![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Jishnnu/COVID-19-Detection)](https://github.com/Jishnnu/COVID-19-Detection) &ensp; [![GitHub repo size](https://img.shields.io/github/repo-size/Jishnnu/COVID-19-Detection)](https://github.com/Jishnnu/COVID-19-Detection) &ensp; [![Open in Spaces](https://huggingface.co/datasets/huggingface/badges/raw/main/open-in-hf-spaces-sm.svg)](https://huggingface.co/spaces/Jishnnu/COVID-19_Detection)
 
 This repository contains all the materials related to the implementation of a **_Hybrid Machine Learning model to predict if an individual has contracted COVID-19 from the symptoms they experience and from the X-Ray scans of their chest (lungs)_**. 
 
